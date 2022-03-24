@@ -86,7 +86,7 @@ namespace WebApiWithQuotas.RateLimit
                 {
                     // Gets name from claims. Generally it's an email address.
                     var usernameClaim = jwttoken.Claims
-                        .Where(x => x.Type == ClaimTypes.Name)
+                        .Where(x => x.Type == ClaimTypes.Name || x.Type == "name")
                         .FirstOrDefault();
 
                     if(usernameClaim != null)

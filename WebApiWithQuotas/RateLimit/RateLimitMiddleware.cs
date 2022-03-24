@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Security.Claims;
 
 namespace WebApiWithQuotas.RateLimit
 {
@@ -67,7 +69,30 @@ namespace WebApiWithQuotas.RateLimit
                     referer = context.Request.Query["Referer"].ToString();
             }
 
+            var bearertoken = "";
             var loggeduser = "";
+            //Check Referer
+            if (context.Request.Headers.ContainsKey("Authorization"))
+                bearertoken = context.Request.Headers["Authorization"].ToString();
+
+            if(!String.IsNullOrEmpty(bearertoken) && bearertoken.StartsWith("Bearer"))
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var token = bearertoken.Replace("Bearer", "");
+
+                var jwttoken = handler.ReadJwtToken(token);
+
+                if(jwttoken != null)
+                {
+                    // Gets name from claims. Generally it's an email address.
+                    var usernameClaim = jwttoken.Claims
+                        .Where(x => x.Type == ClaimTypes.Name)
+                        .FirstOrDefault();
+
+                    if(usernameClaim != null)
+                        loggeduser = usernameClaim.Value;
+                }
+            }
 
             //Check Loggeduser
             //TODO
@@ -75,7 +100,7 @@ namespace WebApiWithQuotas.RateLimit
             //TODO Check if User has Referer, isLogged isAnonymous
 
             //Case 1 Anonymous, Go to IP Restriction (Maybe on Path?)
-            if(String.IsNullOrEmpty(referer) && String.IsNullOrEmpty(loggeduser))
+            if (String.IsNullOrEmpty(referer) && String.IsNullOrEmpty(loggeduser))
             {
                 ratelimitcachekey = $"{context.Request.Path}_{context.Connection.RemoteIpAddress}";
                 ratelimitconfig = rlsettings.Where(x => x.Type == "Anonymous").FirstOrDefault();

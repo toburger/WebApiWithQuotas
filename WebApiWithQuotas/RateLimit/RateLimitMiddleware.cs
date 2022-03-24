@@ -138,7 +138,7 @@ namespace WebApiWithQuotas.RateLimit
                 else
                     clientStat.NumberOfRequestsCompletedSuccessfully++;
 
-                await _cache.SetCahceValueAsync<ClientStatistics>(key, clientStat, timeWindow);
+                await _cache.SetCahceValueAsync<ClientStatistics>(key, timeWindow, clientStat);
             }
             else
             {
@@ -148,7 +148,7 @@ namespace WebApiWithQuotas.RateLimit
                     NumberOfRequestsCompletedSuccessfully = 1
                 };
 
-                await _cache.SetCahceValueAsync<ClientStatistics>(key, clientStatistics, timeWindow);
+                await _cache.SetCahceValueAsync<ClientStatistics>(key, timeWindow, clientStatistics);
             }
 
         }

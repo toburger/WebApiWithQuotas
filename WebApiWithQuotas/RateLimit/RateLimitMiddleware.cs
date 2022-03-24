@@ -46,7 +46,7 @@ namespace WebApiWithQuotas.RateLimit
                 return;
             }
 
-            await UpdateClientStatisticsStorage(key, rlConfig.MaxRequests);
+            await UpdateClientStatisticsStorage(key, rlConfig.MaxRequests, rlConfig.TimeWindow);
             await _next(context);
         }
 
@@ -124,7 +124,7 @@ namespace WebApiWithQuotas.RateLimit
 
         private async Task<ClientStatistics> GetClientStatisticsByKey(string key) => await _cache.GetCacheValueAsync<ClientStatistics>(key);
 
-        private async Task UpdateClientStatisticsStorage(string key, int maxRequests)
+        private async Task UpdateClientStatisticsStorage(string key, int maxRequests, int timeWindow)
         {
             var clientStat = await _cache.GetCacheValueAsync<ClientStatistics>(key);
 
@@ -138,7 +138,7 @@ namespace WebApiWithQuotas.RateLimit
                 else
                     clientStat.NumberOfRequestsCompletedSuccessfully++;
 
-                await _cache.SetCahceValueAsync<ClientStatistics>(key, clientStat);
+                await _cache.SetCahceValueAsync<ClientStatistics>(key, clientStat, timeWindow);
             }
             else
             {
@@ -148,7 +148,7 @@ namespace WebApiWithQuotas.RateLimit
                     NumberOfRequestsCompletedSuccessfully = 1
                 };
 
-                await _cache.SetCahceValueAsync<ClientStatistics>(key, clientStatistics);
+                await _cache.SetCahceValueAsync<ClientStatistics>(key, clientStatistics, timeWindow);
             }
 
         }

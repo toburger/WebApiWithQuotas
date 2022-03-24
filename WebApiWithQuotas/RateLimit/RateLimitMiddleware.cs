@@ -78,7 +78,7 @@ namespace WebApiWithQuotas.RateLimit
             if(!String.IsNullOrEmpty(bearertoken) && bearertoken.StartsWith("Bearer"))
             {
                 var handler = new JwtSecurityTokenHandler();
-                var token = bearertoken.Replace("Bearer", "");
+                var token = bearertoken.Replace("Bearer", "").Trim();
 
                 var jwttoken = handler.ReadJwtToken(token);
 

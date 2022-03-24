@@ -54,9 +54,6 @@ namespace WebApiWithQuotas.RateLimit
 
         private static (RateLimitConfig? rlConfig, string key) GenerateClientKeyExtended(HttpContext context, List<RateLimitConfig> rlsettings)
         {
-            RateLimitConfig? ratelimitconfig = default;
-            string ratelimitcachekey = "";
-
             var referer = "";
 
             //Check Referer
@@ -75,7 +72,7 @@ namespace WebApiWithQuotas.RateLimit
             if (context.Request.Headers.ContainsKey("Authorization"))
                 bearertoken = context.Request.Headers["Authorization"].ToString();
 
-            if(!String.IsNullOrEmpty(bearertoken) && bearertoken.StartsWith("Bearer"))
+            if(!string.IsNullOrEmpty(bearertoken) && bearertoken.StartsWith("Bearer"))
             {
                 var handler = new JwtSecurityTokenHandler();
                 var token = bearertoken.Replace("Bearer", "").Trim();
@@ -99,32 +96,16 @@ namespace WebApiWithQuotas.RateLimit
 
             //TODO Check if User has Referer, isLogged isAnonymous
 
-            //Case 1 Anonymous, Go to IP Restriction (Maybe on Path?)
-            if (String.IsNullOrEmpty(referer) && String.IsNullOrEmpty(loggeduser))
-            {
-                ratelimitcachekey = $"{context.Request.Path}_{context.Connection.RemoteIpAddress}";
-                ratelimitconfig = rlsettings.FirstOrDefault(x => x.Type == "Anonymous");
-            }
-            //Case 2 Referer passed generate key with Referer
-            else if (!String.IsNullOrEmpty(referer) && String.IsNullOrEmpty(loggeduser))
-            {
-                ratelimitcachekey = $"{referer}";
-                ratelimitconfig = rlsettings.Where(x => x.Type == "Referer").FirstOrDefault();
-            }
 
-            //Case 3 Logged user, decode token and use username as key
-            else if (!String.IsNullOrEmpty(loggeduser))
+            return (referer, loggeduser) switch
             {
-                ratelimitcachekey = $"{loggeduser}";
-                ratelimitconfig = rlsettings.Where(x => x.Type == "Logged").FirstOrDefault();
-            }
-            //No rate limit
-            else
-            {
-                return (null, "");
-            }
-
-            return (ratelimitconfig, ratelimitcachekey);
+                //Referer passed generate key with Referer
+                (string refererV, _) => (rlsettings.FirstOrDefault(x => x.Type == "Referer"), $"{refererV}"),
+                //Logged user, decode token and use username as key
+                (_, string loggeduserV) => (rlsettings.FirstOrDefault(x => x.Type == "Logged"), $"{loggeduserV}"),
+                //Anonymous, Go to IP Restriction (Maybe on Path?)
+                _ => (rlsettings.FirstOrDefault(x => x.Type == "Anonymous"), $"{context.Request.Path}_{context.Connection.RemoteIpAddress}"),
+            };
         }
 
         private async Task<ClientStatistics?> GetClientStatisticsByKey(string key) => await _cache.GetCacheValueAsync<ClientStatistics>(key);
